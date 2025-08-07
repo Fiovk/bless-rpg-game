@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPG Catch Larry Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Character Selection Screen */
+        .character-select {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .character-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 20px;
+        }
+        
+        .character-card {
+            width: 150px;
+            height: 200px;
+            background: linear-gradient(145deg, #f0f0f0, #d0d0d0);
+            border-radius: 15px;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .character-card:hover {
+            transform: translateY(-10px) scale(1.05);
+            border-color: #fff;
+            box-shadow: 0 20px 40px rgba(255, 255, 255, 0.3);
+        }
+        
+        .character-card.selected {
+            border-color: #ffff00;
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 255, 0, 0.5);
+        }
+        
+        .character-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+            object-fit: cover;
+        }
+        
+        .character-name {
+            color: #333;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .start-button {
+            margin-top: 30px;
+            padding: 15px 40px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .start-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.4);
+        }
+        
+        /* Game Arena */
+        .game-arena {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            overflow: hidden;
+        }
+        
+        .player {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            z-index: 100;
+        }
+        
+        .larry {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: #ff4757;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.5s ease;
+            z-index: 50;
+            animation: larryFloat 3s ease-in-out infinite;
+        }
+        
+        @keyframes larryFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+        
+        /* UI Elements */
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 200;
+        }
+        
+        .leaderboard {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            min-width: 250px;
+            pointer-events: all;
+        }
+        
+        .leaderboard h3 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #ffff00;
+        }
+        
+        .player-stats {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            pointer-events: all;
+        }
+        
+        .xp-bar {
+            width: 200px;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .xp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00, #ffff00);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+        
+        /* Effects */
+        .catch-effect {
+            position: absolute;
+            pointer-events: none;
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffff00;
+            animation: catchAnimation 1s ease-out forwards;
+            z-index: 300;
+        }
+        
+        @keyframes catchAnimation {
+            0% {
+                transform: scale(0) rotate(0deg);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.5) rotate(180deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(2) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        .level-up-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(45deg, #ff6b6b, #ffa726);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            z-index: 500;
+            animation: levelUpAnimation 2s ease-out forwards;
+        }
+        
+        @keyframes levelUpAnimation {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0;
+            }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .character-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .leaderboard, .player-stats {
+                position: relative;
+                margin: 10px;
+                width: calc(100% - 20px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Character Selection Screen -->
+        <div class="character-select" id="characterSelect">
+            <h1 style="color: white; margin-bottom: 30px; font-size: 32px;">Choose Your Character</h1>
+            <div class="character-grid">
+                <div class="character-card" data-character="crbaa">
+                    <div class="character-avatar" style="background: linear-gradient(45deg, #ff6b6b, #ee5a24);"></div>
+                    <div class="character-name">Crbaa</div>
+                </div>
+                <div class="character-card" data-character="rengoku">
+                    <div class="character-avatar" style="background: linear-gradient(45deg, #ffa726, #ff5722);"></div>
+                    <div class="character-name">Rengoku</div>
+                </div>
+                <div class="character-card" data-character="kriss">
+                    <div class="character-avatar" style="background: linear-gradient(45deg, #42a5f5, #1976d2);"></div>
+                    <div class="character-name">Kriss</div>
+                </div>
+                <div class="character-card" data-character="emilex">
+                    <div class="character-avatar" style="background: linear-gradient(45deg, #ab47bc, #7b1fa2);"></div>
+                    <div class="character-name">Emilex</div>
+                </div>
+                <div class="character-card" data-character="mlem">
+                    <div class="character-avatar" style="background: linear-gradient(45deg, #66bb6a, #388e3c);"></div>
+                    <div class="character-name">Mlem</div>
+                </div>
+                <div class="character-card" data-character="lock">
+                    <div class="character-avatar" style="background: linear-gradient(45deg, #78909c, #455a64);"></div>
+                    <div class="character-name">Lock</div>
+                </div>
+            </div>
+            <button class="start-button" id="startGame" disabled>Start Game</button>
+        </div>
+        
+        <!-- Game Arena -->
+        <div class="game-arena" id="gameArena" style="display: none;">
+            <!-- UI Overlay -->
+            <div class="ui-overlay">
+                <div class="player-stats">
+                    <h3 id="playerName">Player</h3>
+                    <div>Level: <span id="playerLevel">1</span></div>
+                    <div>XP: <span id="playerXP">0</span>/<span id="playerMaxXP">100</span></div>
+                    <div class="xp-bar">
+                        <div class="xp-fill" id="xpFill"></div>
+                    </div>
+                    <div>Catches: <span id="playerCatches">0</span></div>
+                </div>
+                
+                <div class="leaderboard">
+                    <h3>🏆 Leaderboard</h3>
+                    <div id="leaderboardList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class Game {
+            constructor() {
+                this.players = new Map();
+                this.selectedCharacter = null;
+                this.currentPlayer = null;
+                this.larry = null;
+                this.gameRunning = false;
+                this.larrySpawnInterval = null;
+                
+                this.characterColors = {
+                    crbaa: '#ff6b6b',
+                    rengoku: '#ffa726', 
+                    kriss: '#42a5f5',
+                    emilex: '#ab47bc',
+                    mlem: '#66bb6a',
+                    lock: '#78909c'
+                };
+                
+                this.init();
+            }
+            
+            init() {
+                this.setupCharacterSelection();
+                this.setupGameEvents();
+                this.createAudioContext();
+            }
+            
+            createAudioContext() {
+                // Create audio context for sound effects
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            playSound(frequency = 440, duration = 200) {
+                if (!this.audioContext) return;
+                
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration / 1000);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + duration / 1000);
+            }
+            
+            setupCharacterSelection() {
+                const characterCards = document.querySelectorAll('.character-card');
+                const startButton = document.getElementById('startGame');
+                
+                characterCards.forEach(card => {
+                    card.addEventListener('click', () => {
+                        characterCards.forEach(c => c.classList.remove('selected'));
+                        card.classList.add('selected');
+                        this.selectedCharacter = card.dataset.character;
+                        startButton.disabled = false;
+                    });
+                });
+                
+                startButton.addEventListener('click', () => {
+                    if (this.selectedCharacter) {
+                        this.startGame();
+                    }
+                });
+            }
+            
+            setupGameEvents() {
+                const gameArena = document.getElementById('gameArena');
+                gameArena.addEventListener('click', (e) => {
+                    if (this.gameRunning && this.currentPlayer) {
+                        this.movePlayer(e.clientX, e.clientY);
+                    }
+                });
+            }
+            
+            startGame() {
+                document.getElementById('characterSelect').style.display = 'none';
+                document.getElementById('gameArena').style.display = 'block';
+                
+                this.createPlayer();
+                this.createBots();
+                this.spawnLarry();
+                this.gameRunning = true;
+                
+                // Start Larry spawning interval
+                this.larrySpawnInterval = setInterval(() => {
+                    if (Math.random() < 0.3) {
+                        this.spawnLarry();
+                    }
+                }, 3000);
+                
+                this.updateUI();
+            }
+            
+            createPlayer() {
+                const playerId = 'player_' + Date.now();
+                const player = {
+                    id: playerId,
+                    name: this.selectedCharacter.charAt(0).toUpperCase() + this.selectedCharacter.slice(1),
+                    character: this.selectedCharacter,
+                    x: Math.random() * (window.innerWidth - 100) + 50,
+                    y: Math.random() * (window.innerHeight - 100) + 50,
+                    level: 1,
+                    xp: 0,
+                    maxXP: 100,
+                    catches: 0,
+                    isPlayer: true
+                };
+                
+                this.players.set(playerId, player);
+                this.currentPlayer = player;
+                this.createPlayerElement(player);
+                
+                document.getElementById('playerName').textContent = player.name;
+            }
+            
+            createBots() {
+                const botCharacters = Object.keys(this.characterColors).filter(char => char !== this.selectedCharacter);
+                
+                botCharacters.forEach(character => {
+                    const botId = 'bot_' + character;
+                    const bot = {
+                        id: botId,
+                        name: character.charAt(0).toUpperCase() + character.slice(1),
+                        character: character,
+                        x: Math.random() * (window.innerWidth - 100) + 50,
+                        y: Math.random() * (window.innerHeight - 100) + 50,
+                        level: 1,
+                        xp: 0,
+                        maxXP: 100,
+                        catches: 0,
+                        isPlayer: false
+                    };
+                    
+                    this.players.set(botId, bot);
+                    this.createPlayerElement(bot);
+                    
+                    // Bot AI
+                    setInterval(() => {
+                        if (this.gameRunning && this.larry) {
+                            this.moveBotTowardsLarry(bot);
+                        } else {
+                            this.moveBotRandomly(bot);
+                        }
+                    }, 1000 + Math.random() * 2000);
+                });
+            }
+            
+            createPlayerElement(player) {
+                const playerElement = document.createElement('div');
+                playerElement.className = 'player';
+                playerElement.id = player.id;
+                playerElement.style.left = player.x + 'px';
+                playerElement.style.top = player.y + 'px';
+                playerElement.style.background = this.characterColors[player.character];
+                playerElement.style.border = player.isPlayer ? '3px solid #ffff00' : '2px solid #fff';
+                
+                // Add character initial
+                playerElement.innerHTML = `<div style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 100%;
+                    height: 100%;
+                    color: white;
+                    font-weight: bold;
+                    font-size: 14px;
+                ">${player.character.charAt(0).toUpperCase()}</div>`;
+                
+                document.getElementById('gameArena').appendChild(playerElement);
+            }
+            
+            movePlayer(x, y) {
+                if (!this.currentPlayer) return;
+                
+                this.currentPlayer.x = Math.max(30, Math.min(window.innerWidth - 30, x));
+                this.currentPlayer.y = Math.max(30, Math.min(window.innerHeight - 30, y));
+                
+                const playerElement = document.getElementById(this.currentPlayer.id);
+                if (playerElement) {
+                    playerElement.style.left = this.currentPlayer.x + 'px';
+                    playerElement.style.top = this.currentPlayer.y + 'px';
+                }
+                
+                this.checkLarryCollision(this.currentPlayer);
+            }
+            
+            moveBotRandomly(bot) {
+                bot.x += (Math.random() - 0.5) * 100;
+                bot.y += (Math.random() - 0.5) * 100;
+                
+                bot.x = Math.max(30, Math.min(window.innerWidth - 30, bot.x));
+                bot.y = Math.max(30, Math.min(window.innerHeight - 30, bot.y));
+                
+                const botElement = document.getElementById(bot.id);
+                if (botElement) {
+                    botElement.style.left = bot.x + 'px';
+                    botElement.style.top = bot.y + 'px';
+                }
+                
+                this.checkLarryCollision(bot);
+            }
+            
+            moveBotTowardsLarry(bot) {
+                if (!this.larry) return;
+                
+                const dx = this.larry.x - bot.x;
+                const dy = this.larry.y - bot.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance > 5) {
+                    const speed = 30 + Math.random() * 40;
+                    bot.x += (dx / distance) * speed;
+                    bot.y += (dy / distance) * speed;
+                    
+                    bot.x = Math.max(30, Math.min(window.innerWidth - 30, bot.x));
+                    bot.y = Math.max(30, Math.min(window.innerHeight - 30, bot.y));
+                    
+                    const botElement = document.getElementById(bot.id);
+                    if (botElement) {
+                        botElement.style.left = bot.x + 'px';
+                        botElement.style.top = bot.y + 'px';
+                    }
+                }
+                
+                this.checkLarryCollision(bot);
+            }
+            
+            spawnLarry() {
+                if (this.larry) {
+                    const existingLarry = document.getElementById('larry');
+                    if (existingLarry) {
+                        existingLarry.remove();
+                    }
+                }
+                
+                this.larry = {
+                    x: Math.random() * (window.innerWidth - 100) + 50,
+                    y: Math.random() * (window.innerHeight - 100) + 50
+                };
+                
+                const larryElement = document.createElement('div');
+                larryElement.className = 'larry';
+                larryElement.id = 'larry';
+                larryElement.style.left = this.larry.x + 'px';
+                larryElement.style.top = this.larry.y + 'px';
+                larryElement.innerHTML = `<div style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 100%;
+                    height: 100%;
+                    color: white;
+                    font-weight: bold;
+                    font-size: 12px;
+                ">L</div>`;
+                
+                document.getElementById('gameArena').appendChild(larryElement);
+                
+                // Auto remove Larry after 10 seconds
+                setTimeout(() => {
+                    if (document.getElementById('larry')) {
+                        document.getElementById('larry').remove();
+                        this.larry = null;
+                    }
+                }, 10000);
+            }
+            
+            checkLarryCollision(player) {
+                if (!this.larry) return;
+                
+                const dx = player.x - this.larry.x;
+                const dy = player.y - this.larry.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < 50) {
+                    this.catchLarry(player);
+                }
+            }
+            
+            catchLarry(player) {
+                if (!this.larry) return;
+                
+                // Play catch sound
+                this.playSound(800, 300);
+                
+                // Award XP and increment catch count
+                const xpGain = 20 + Math.floor(Math.random() * 30);
+                player.xp += xpGain;
+                player.catches++;
+                
+                // Show catch effect
+                this.showCatchEffect(this.larry.x, this.larry.y, `+${xpGain} XP!`);
+                
+                // Check for level up
+                if (player.xp >= player.maxXP) {
+                    player.level++;
+                    player.xp -= player.maxXP;
+                    player.maxXP = Math.floor(player.maxXP * 1.5);
+                    
+                    if (player.isPlayer) {
+                        this.showLevelUpNotification(player.level);
+                        this.playSound(1000, 500);
+                    }
+                }
+                
+                // Remove Larry
+                const larryElement = document.getElementById('larry');
+                if (larryElement) {
+                    larryElement.remove();
+                }
+                this.larry = null;
+                
+                this.updateUI();
+            }
+            
+            showCatchEffect(x, y, text) {
+                const effect = document.createElement('div');
+                effect.className = 'catch-effect';
+                effect.textContent = text;
+                effect.style.left = x + 'px';
+                effect.style.top = y + 'px';
+                
+                document.body.appendChild(effect);
+                
+                setTimeout(() => {
+                    effect.remove();
+                }, 1000);
+            }
+            
+            showLevelUpNotification(level) {
+                const notification = document.createElement('div');
+                notification.className = 'level-up-notification';
+                notification.textContent = `LEVEL UP! Level ${level}`;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 2000);
+            }
+            
+            updateUI() {
+                if (this.currentPlayer) {
+                    document.getElementById('playerLevel').textContent = this.currentPlayer.level;
+                    document.getElementById('playerXP').textContent = this.currentPlayer.xp;
+                    document.getElementById('playerMaxXP').textContent = this.currentPlayer.maxXP;
+                    document.getElementById('playerCatches').textContent = this.currentPlayer.catches;
+                    
+                    const xpPercent = (this.currentPlayer.xp / this.currentPlayer.maxXP) * 100;
+                    document.getElementById('xpFill').style.width = xpPercent + '%';
+                }
+                
+                this.updateLeaderboard();
+            }
+            
+            updateLeaderboard() {
+                const sortedPlayers = Array.from(this.players.values())
+                    .sort((a, b) => {
+                        if (b.level !== a.level) return b.level - a.level;
+                        if (b.catches !== a.catches) return b.catches - a.catches;
+                        return b.xp - a.xp;
+                    });
+                
+                const leaderboardList = document.getElementById('leaderboardList');
+                leaderboardList.innerHTML = '';
+                
+                sortedPlayers.forEach((player, index) => {
+                    const playerDiv = document.createElement('div');
+                    playerDiv.style.cssText = `
+                        display: flex;
+                        justify-content: space-between;
+                        margin: 8px 0;
+                        padding: 8px;
+                        background: ${player.isPlayer ? 'rgba(255, 255, 0, 0.2)' : 'rgba(255, 255, 255, 0.1)'};
+                        border-radius: 8px;
+                        color: ${player.isPlayer ? '#ffff00' : 'white'};
+                    `;
+                    
+                    playerDiv.innerHTML = `
+                        <span>${index + 1}. ${player.name}</span>
+                        <span>L${player.level} (${player.catches})</span>
+                    `;
+                    
+                    leaderboardList.appendChild(playerDiv);
+                });
+            }
+        }
+        
+        // Start the game when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new Game();
+        });
+    </script>
+</body>
+</html>
